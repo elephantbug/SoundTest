@@ -21,8 +21,11 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.addPositionalArgument("source", QCoreApplication::translate("main", "Sound file to play."));
 
-    QCommandLineOption reproduceBug("b", QCoreApplication::translate("main", "Reproduce QSoundEffect bug."));
-    parser.addOption(reproduceBug);
+    QCommandLineOption reproduceBugOption("b", QCoreApplication::translate("main", "Reproduce QSoundEffect bug."));
+    parser.addOption(reproduceBugOption);
+
+    QCommandLineOption loopSoundOption("l", QCoreApplication::translate("main", "Loop the sound."));
+    parser.addOption(loopSoundOption);
 
     parser.process(app);
 
@@ -34,7 +37,7 @@ int main(int argc, char *argv[])
 
         std::function<void ()> start_func;
 
-        if (parser.isSet(reproduceBug))
+        if (parser.isSet(reproduceBugOption))
         {
             std::cout << "with QSoundEffect..." << std::endl;
 
@@ -42,14 +45,34 @@ int main(int argc, char *argv[])
 
             pSound->setSource(QUrl::fromLocalFile(sound_file_name));
 
-            auto loop_sound_func = [&app, pSound]()
-            {
-                std::cout << "Is playing = " << pSound->isPlaying() << std::endl;
-                if (!pSound->isPlaying())
-                    app.quit();
-            };
+            std::function<void ()> status_func;
 
-            QObject::connect(pSound.get(), &QSoundEffect::playingChanged, &app, loop_sound_func,
+            if (parser.isSet(loopSoundOption))
+            {
+                status_func = [&app, pSound]()
+                {
+                    std::cout << "Is playing = " << pSound->isPlaying() << std::endl;
+
+                    if (!pSound->isPlaying())
+                    {
+                        pSound->play();
+                    }
+                };
+            }
+            else
+            {
+                status_func = [&app, pSound]()
+                {
+                    std::cout << "Is playing = " << pSound->isPlaying() << std::endl;
+
+                    if (!pSound->isPlaying())
+                    {
+                        app.quit();
+                    }
+                };
+            }
+
+            QObject::connect(pSound.get(), &QSoundEffect::playingChanged, &app, status_func,
                 Qt::QueuedConnection);
 
             start_func = [pSound]() { pSound->play(); };
