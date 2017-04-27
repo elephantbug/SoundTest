@@ -58,6 +58,8 @@ namespace SoundTest
             loop_ = val;
         }
 
+        static void PrintCodecs();
+
     signals:
 
         void done();

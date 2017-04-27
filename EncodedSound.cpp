@@ -34,19 +34,6 @@ EncodedSound::EncodedSound(const QString & file_name) : audioOutput(GetWavFormat
     connect(&audioOutput, &QAudioOutput::notify, this, &EncodedSound::onNotify);
 }
 
-//QAudioFormat EncodedSound::GetWavFormat()
-//{
-//    QAudioFormat desiredFormat;
-
-//    desiredFormat.setChannelCount(2);
-//    desiredFormat.setCodec("audio/x-raw");
-//    desiredFormat.setSampleType(QAudioFormat::UnSignedInt);
-//    desiredFormat.setSampleRate(48000);
-//    desiredFormat.setSampleSize(16);
-
-//    return desiredFormat;
-//}
-
 QAudioFormat EncodedSound::GetWavFormat()
 {
     QAudioFormat desiredFormat;
@@ -61,8 +48,6 @@ QAudioFormat EncodedSound::GetWavFormat()
     desiredFormat.setSampleSize(16);
 
     QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-    //std::cout << "Supported Codecs : " << info.supportedCodecs();
-    auto codecs = info.supportedCodecs();
 
     if (!info.isFormatSupported(desiredFormat))
     {
@@ -71,6 +56,21 @@ QAudioFormat EncodedSound::GetWavFormat()
     }
 
     return desiredFormat;
+}
+
+void EncodedSound::PrintCodecs()
+{
+    QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+
+    std::cout << "Supported Codecs : ";
+    auto codecs = info.supportedCodecs();
+
+    for (const QString & c : codecs)
+    {
+        std::cout << " " << c.toStdString();
+    }
+
+    std::cout << std::endl;
 }
 
 void EncodedSound::Start()
@@ -237,7 +237,7 @@ void EncodedSound::onStateChanged(QAudio::State state)
             }
             else
             {
-                isActive = true;
+                isActive = false;
 
                 emit done();
             }

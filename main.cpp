@@ -81,6 +81,8 @@ int main(int argc, char *argv[])
         {
             std::cout << "with QAudioOutput..." << std::endl;
 
+            SoundTest::EncodedSound::PrintCodecs();
+
             std::shared_ptr<SoundTest::EncodedSound> pSound = std::make_shared<SoundTest::EncodedSound>(sound_file_name);
 
             QObject::connect(pSound.get(), &SoundTest::EncodedSound::done, &app, [&app]() {app.quit();});
