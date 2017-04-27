@@ -15,12 +15,12 @@ using namespace SoundTest;
 
 EncodedSound::EncodedSound(const QString & file_name) : audioOutput(GetWavFormat(), this)
 {
-    std::cerr << "XXX: Begin create decoder\n";
+    //std::cerr << "XXX: Begin create decoder\n";
     audioDecoder.reset(new QAudioDecoder(this));
-    std::cerr << "XXX: End create decoder\n";
+    //std::cerr << "XXX: End create decoder\n";
     audioDecoder->setAudioFormat(GetWavFormat());
     //audioDecoder.setSourceDevice();
-    std::cerr << "XXX: Setting source file name\n";
+    //std::cerr << "XXX: Setting source file name\n";
     audioDecoder->setSourceFilename(file_name);
 
     connect(audioDecoder.get(), SIGNAL(bufferReady()), this, SLOT(bufferReady()));
@@ -30,13 +30,8 @@ EncodedSound::EncodedSound(const QString & file_name) : audioOutput(GetWavFormat
     connect(audioDecoder.get(), SIGNAL(positionChanged(qint64)), this, SLOT(updateProgress()));
     connect(audioDecoder.get(), SIGNAL(durationChanged(qint64)), this, SLOT(updateProgress()));
 
-    connect(&audioOutput, &QAudioOutput::stateChanged, this, [this](QAudio::State state)
-    {
-        if (state == QAudio::IdleState)
-        {
-            //emit done();
-        }
-    });
+    connect(&audioOutput, &QAudioOutput::stateChanged, this, &EncodedSound::onStateChanged);
+    connect(&audioOutput, &QAudioOutput::notify, this, &EncodedSound::onNotify);
 }
 
 //QAudioFormat EncodedSound::GetWavFormat()
@@ -112,9 +107,9 @@ void EncodedSound::CommonStart(float duration, bool loop, double volume)
     Q_UNUSED(loop)
     Q_UNUSED(volume)
 
-    std::cerr << "XXX: start\n";
+    //std::cerr << "XXX: start\n";
     audioDecoder->start();
-    std::cerr << "XXX: finish start\n";
+    //std::cerr << "XXX: finish start\n";
 
     pAudioStream = audioOutput.start();
 }
@@ -207,4 +202,72 @@ void EncodedSound::finished()
 
 void EncodedSound::updateProgress()
 {
+}
+
+void EncodedSound::onStateChanged(QAudio::State state)
+{
+    switch (state)
+    {
+    case QAudio::ActiveState:
+        std::cout << "QAudio::ActiveState" << std::endl;
+        isActive = true;
+        break;
+
+    case QAudio::SuspendedState:
+        std::cout << "QAudio::ActiveState" << std::endl;
+        break;
+
+    case QAudio::StoppedState:
+        std::cout << "QAudio::StoppedState" << std::endl;
+        break;
+
+    case QAudio::IdleState:
+
+        std::cout << "QAudio::IdleState" << std::endl;
+
+        std::cout << "QAudioDecoder::State=" << (audioDecoder->state() == QAudioDecoder::StoppedState ? "Stoppped" : "Decoding") << std::endl;
+
+        if (isActive)
+        {
+            if (loop_)
+            {
+                audioDecoder->stop();
+                //audioDecoder->setSourceFilename(audioDecoder->sourceFilename());
+                audioDecoder->start();
+            }
+            else
+            {
+                isActive = true;
+
+                emit done();
+            }
+        }
+
+//        if (loopWithStateChanged)
+//        {
+//            //looks like we need to call start() at this point, because others do not take an effect
+//            //audioOutput.suspend();
+//            //audioOutput.reset();
+//            //audioOutput.resume();
+
+//            SeekToStart();
+
+//            audioOutput.start(pDevice);
+//        }
+
+        break;
+    }
+}
+
+void EncodedSound::onNotify()
+{
+    std::cout << "onNotify()" << std::endl;
+
+    //qDebug() << "loopWithNotify =" << loopWithNotify;
+
+    //probably onNotify() way is better, because we do not need to call start() here
+//    if (loopWithNotify)
+//    {
+//        SeekToStart();
+//    }
 }

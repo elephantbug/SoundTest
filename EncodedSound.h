@@ -48,6 +48,16 @@ namespace SoundTest
 
         void Convert(const QString & file_name);
 
+        bool isLooping() const
+        {
+            return loop_;
+        }
+
+        void loop(bool val)
+        {
+            loop_ = val;
+        }
+
     signals:
 
         void done();
@@ -57,6 +67,8 @@ namespace SoundTest
         void error(QAudioDecoder::Error error);
         void stateChanged(QAudioDecoder::State newState);
         void finished();
+        void onStateChanged(QAudio::State);
+        void onNotify();
 
     private slots:
         void updateProgress();
@@ -74,5 +86,9 @@ namespace SoundTest
         void CommonStart(float duration, bool loop, double volume);
 
         double volumeCorrection = 1.0;
+
+        bool isActive = false;
+
+        bool loop_ = false;
     };
 }

@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
 
             QObject::connect(pSound.get(), &SoundTest::EncodedSound::done, &app, [&app]() {app.quit();});
 
+            pSound->loop(parser.isSet(loopSoundOption));
+
             start_func = [pSound]() { pSound->Start(); };
         }
 
