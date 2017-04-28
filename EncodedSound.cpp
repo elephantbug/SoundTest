@@ -37,30 +37,6 @@ EncodedSound::EncodedSound(const QString & file_name) : inputFile(file_name), au
     connect(&audioOutput, &QAudioOutput::notify, this, &EncodedSound::onNotify);
 }
 
-QAudioFormat EncodedSound::GetWavFormat()
-{
-    QAudioFormat desiredFormat;
-
-    desiredFormat.setChannelCount(2);
-    desiredFormat.setCodec("audio/pcm");
-    desiredFormat.setByteOrder(QAudioFormat::LittleEndian);
-    //desiredFormat.setByteOrder(QAudioFormat::BigEndian);
-    desiredFormat.setSampleType(QAudioFormat::SignedInt);
-    //desiredFormat.setSampleType(QAudioFormat::UnSignedInt);
-    desiredFormat.setSampleRate(44100); //8000
-    desiredFormat.setSampleSize(16);
-
-    QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-
-    if (!info.isFormatSupported(desiredFormat))
-    {
-        std::cout << "Default WAV sound format is not supported, trying to use nearest." << std::endl;
-        return info.nearestFormat(desiredFormat);
-    }
-
-    return desiredFormat;
-}
-
 void EncodedSound::PrintCodecs()
 {
     QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());

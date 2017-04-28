@@ -3,6 +3,8 @@
 #include <QTimer>
 #include <QObject>
 #include <QSoundEffect>
+#include <QByteArray>
+#include <QFile>
 #include <iostream>
 #include <sstream>
 #include <assert.h>
@@ -10,6 +12,10 @@
 #include <functional>
 
 #include "EncodedSound.h"
+#include "SoundDevice.h"
+#include "SoundDecoder.h"
+
+using namespace SoundTest;
 
 int main(int argc, char *argv[])
 {
@@ -23,6 +29,12 @@ int main(int argc, char *argv[])
 
     QCommandLineOption reproduceBugOption("b", QCoreApplication::translate("main", "Reproduce QSoundEffect bug."));
     parser.addOption(reproduceBugOption);
+
+    QCommandLineOption useEncodedSoundClassOption("e", QCoreApplication::translate("main", "Use EncodedSound class."));
+    parser.addOption(useEncodedSoundClassOption);
+
+    QCommandLineOption rawOption("r", QCoreApplication::translate("main", "Play raw sound (do not decode)."));
+    parser.addOption(rawOption);
 
     QCommandLineOption loopSoundOption("l", QCoreApplication::translate("main", "Loop the sound."));
     parser.addOption(loopSoundOption);
@@ -77,7 +89,7 @@ int main(int argc, char *argv[])
 
             start_func = [pSound]() { pSound->play(); };
         }
-        else
+        else if (parser.isSet(useEncodedSoundClassOption))
         {
             std::cout << "with QAudioOutput..." << std::endl;
 
@@ -90,6 +102,61 @@ int main(int argc, char *argv[])
             pSound->loop(parser.isSet(loopSoundOption));
 
             start_func = [pSound]() { pSound->Start(); };
+        }
+        else if (parser.isSet(rawOption))
+        {
+            std::shared_ptr<QFile> inputFile = std::make_shared<QFile>(sound_file_name);
+
+            if (inputFile->open(QIODevice::ReadOnly))
+            {
+                inputFile->seek(44);
+
+                std::shared_ptr<SoundDevice> pDevice = std::make_shared<SoundDevice>();
+
+                QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
+
+                start_func = [pDevice, inputFile]()
+                {
+                    pDevice->Start(inputFile.get(), 0, false);
+                };
+            }
+            else
+            {
+                std::cout << "Cannot open input file '" << sound_file_name.toStdString() << "'." << std::endl;
+
+                start_func = [&app]()
+                {
+                    app.quit();
+                };
+            }
+        }
+        else
+        {
+            std::shared_ptr<QByteArray> pSoundBuffer = std::make_shared<QByteArray>();
+
+            std::shared_ptr<SoundDecoder> pDecoder = std::make_shared<SoundDecoder>(sound_file_name, *(pSoundBuffer.get()));
+
+            start_func = [pSoundBuffer, pDecoder]()
+            {
+                pDecoder->Start();
+            };
+
+            std::shared_ptr<SoundDevice> pDevice = std::make_shared<SoundDevice>();
+
+            std::shared_ptr<QBuffer> in = std::make_shared<QBuffer>(pSoundBuffer.get());
+
+            std::function<void ()> next_func = [in, pSoundBuffer, pDevice]()
+            {
+                std::cout << "Sound buffer size = " << pSoundBuffer->length() << std::endl;
+
+                in->open(QIODevice::ReadOnly);
+
+                pDevice->Start(in.get(), 0, true);
+            };
+
+            QObject::connect(pDecoder.get(), &SoundDecoder::done, &app, next_func);
+
+            QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
         }
 
         // This will run the task from the application event loop.

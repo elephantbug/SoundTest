@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <QAudioFormat>
 
 namespace SoundTest
 {
@@ -28,4 +29,6 @@ namespace SoundTest
     };
 
     std::shared_ptr<Sound> CreateEncodedSound(const QString & file_name);
+
+    QAudioFormat GetWavFormat();
 }

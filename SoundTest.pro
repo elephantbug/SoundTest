@@ -10,8 +10,12 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    EncodedSound.cpp
+    EncodedSound.cpp \
+    SoundDecoder.cpp \
+    SoundDevice.cpp
 
 HEADERS += \
     Sound.h \
-    EncodedSound.h
+    EncodedSound.h \
+    SoundDecoder.h \
+    SoundDevice.h

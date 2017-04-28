@@ -76,8 +76,6 @@ namespace SoundTest
 
     private:
 
-        QAudioFormat GetWavFormat();
-
         //looks like QAudioDecoder is not currently supported on Android.
         QFile inputFile;
         std::unique_ptr<QAudioDecoder> audioDecoder;
