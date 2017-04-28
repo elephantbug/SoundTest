@@ -1,5 +1,6 @@
 #include "EncodedSound.h"
 
+#include <assert.h>
 #include <iostream>
 #include <sstream>
 
@@ -13,7 +14,7 @@ namespace SoundTest
 
 using namespace SoundTest;
 
-EncodedSound::EncodedSound(const QString & file_name) : audioOutput(GetWavFormat(), this)
+EncodedSound::EncodedSound(const QString & file_name) : inputFile(file_name), audioOutput(GetWavFormat(), this), outputFile(&outputArray)
 {
     //std::cerr << "XXX: Begin create decoder\n";
     audioDecoder.reset(new QAudioDecoder(this));
@@ -21,14 +22,16 @@ EncodedSound::EncodedSound(const QString & file_name) : audioOutput(GetWavFormat
     audioDecoder->setAudioFormat(GetWavFormat());
     //audioDecoder.setSourceDevice();
     //std::cerr << "XXX: Setting source file name\n";
-    audioDecoder->setSourceFilename(file_name);
+    //audioDecoder->setSourceFilename(file_name);
 
-    connect(audioDecoder.get(), SIGNAL(bufferReady()), this, SLOT(bufferReady()));
-    connect(audioDecoder.get(), SIGNAL(error(QAudioDecoder::Error)), this, SLOT(error(QAudioDecoder::Error)));
-    connect(audioDecoder.get(), SIGNAL(stateChanged(QAudioDecoder::State)), this, SLOT(stateChanged(QAudioDecoder::State)));
-    connect(audioDecoder.get(), SIGNAL(finished()), this, SLOT(finished()));
-    connect(audioDecoder.get(), SIGNAL(positionChanged(qint64)), this, SLOT(updateProgress()));
-    connect(audioDecoder.get(), SIGNAL(durationChanged(qint64)), this, SLOT(updateProgress()));
+    connect(audioDecoder.get(), &QAudioDecoder::bufferReady, this, &EncodedSound::bufferReady);
+    //Cannot figure out why this connect does not compile.
+    //connect(audioDecoder.get(), &QAudioDecoder::error, this, &EncodedSound::onError);
+    connect(audioDecoder.get(), SIGNAL(error(QAudioDecoder::Error)), this, SLOT(onError(QAudioDecoder::Error)));
+    connect(audioDecoder.get(), &QAudioDecoder::stateChanged, this, &EncodedSound::stateChanged);
+    connect(audioDecoder.get(), &QAudioDecoder::finished, this, &EncodedSound::finished);
+    connect(audioDecoder.get(), &QAudioDecoder::positionChanged, this, &EncodedSound::updateProgress);
+    connect(audioDecoder.get(), &QAudioDecoder::durationChanged, this, &EncodedSound::updateProgress);
 
     connect(&audioOutput, &QAudioOutput::stateChanged, this, &EncodedSound::onStateChanged);
     connect(&audioOutput, &QAudioOutput::notify, this, &EncodedSound::onNotify);
@@ -107,23 +110,23 @@ void EncodedSound::CommonStart(float duration, bool loop, double volume)
     Q_UNUSED(loop)
     Q_UNUSED(volume)
 
-    //std::cerr << "XXX: start\n";
-    audioDecoder->start();
-    //std::cerr << "XXX: finish start\n";
-
-    pAudioStream = audioOutput.start();
-}
-
-void EncodedSound::Convert(const QString & file_name)
-{
-    outputFile.setFileName(file_name);
-
-    if (!outputFile.open(QIODevice::WriteOnly))
+    if (inputFile.open(QIODevice::ReadOnly))
     {
-        throw SoundException(QString("Cannot open file '%1' for writing.").arg(file_name));
-    }
+        outputFile.open(QIODevice::WriteOnly);
 
-    audioDecoder->start();
+        audioDecoder->setSourceDevice(&inputFile);
+
+        //std::cerr << "XXX: start\n";
+        audioDecoder->start();
+        //std::cerr << "XXX: finish start\n";
+
+        pAudioStream = audioOutput.start();
+    }
+    else
+    {
+        std::cout << QString("Cannot open file '%1' for reading.").arg(inputFile.fileName()).toStdString() << std::endl;
+        emit done();
+    }
 }
 
 void EncodedSound::bufferReady()
@@ -134,22 +137,19 @@ void EncodedSound::bufferReady()
     {
         std::cout << "Audio buffer byte count = " << buffer.byteCount() << std::endl;
 
-        if (pAudioStream != nullptr)
-        {
-            pAudioStream->write((const char *)buffer.data(), buffer.byteCount());
-        }
-        else
-        {
-            outputFile.write((const char *)buffer.data(), buffer.byteCount());
-        }
+        assert(pAudioStream != nullptr);
+
+        pAudioStream->write((const char *)buffer.data(), buffer.byteCount());
+        outputFile.write((const char *)buffer.data(), buffer.byteCount());
     }
     else
     {
         std::cout << "Audio buffer is invalid." << std::endl;
+        emit done();
     }
 }
 
-void EncodedSound::error(QAudioDecoder::Error error)
+void EncodedSound::onError(QAudioDecoder::Error error)
 {
     switch (error)
     {
@@ -229,11 +229,20 @@ void EncodedSound::onStateChanged(QAudio::State state)
 
         if (isActive)
         {
-            if (loop_)
+            if (audioDecoder != nullptr)
             {
                 audioDecoder->stop();
-                //audioDecoder->setSourceFilename(audioDecoder->sourceFilename());
-                audioDecoder->start();
+
+                audioDecoder.reset(nullptr);
+
+                inputFile.close();
+
+                outputFile.close();
+            }
+
+            if (loop_)
+            {
+                pAudioStream->write(outputArray.data(), outputArray.length());
             }
             else
             {

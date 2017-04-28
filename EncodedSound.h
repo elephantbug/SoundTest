@@ -5,6 +5,7 @@
 #include <QAudioOutput>
 #include <QException>
 #include <QFile>
+#include <QBuffer>
 #include <memory>
 
 #include "Sound.h"
@@ -46,8 +47,6 @@ namespace SoundTest
 
         virtual void SetVolume(double val) override;
 
-        void Convert(const QString & file_name);
-
         bool isLooping() const
         {
             return loop_;
@@ -60,30 +59,32 @@ namespace SoundTest
 
         static void PrintCodecs();
 
-    signals:
-
-        void done();
-
-    public slots:
+    //public slots:
         void bufferReady();
-        void error(QAudioDecoder::Error error);
         void stateChanged(QAudioDecoder::State newState);
         void finished();
         void onStateChanged(QAudio::State);
         void onNotify();
+        void updateProgress();
+
+    signals:
+
+        void done();
 
     private slots:
-        void updateProgress();
+        void onError(QAudioDecoder::Error error);
 
     private:
 
         QAudioFormat GetWavFormat();
 
         //looks like QAudioDecoder is not currently supported on Android.
+        QFile inputFile;
         std::unique_ptr<QAudioDecoder> audioDecoder;
         QAudioOutput audioOutput;
         QIODevice * pAudioStream = nullptr;
-        QFile outputFile;
+        QByteArray outputArray;
+        QBuffer outputFile;
 
         void CommonStart(float duration, bool loop, double volume);
 
