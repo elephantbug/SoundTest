@@ -8,8 +8,8 @@ SoundDevice::SoundDevice() : audioOutput(GetWavFormat(), this)
 {
     ClearFlags();
 
-    connect(&audioOutput, SIGNAL(notify()), this, SLOT(onNotify()), Qt::DirectConnection);
-    connect(&audioOutput, SIGNAL(stateChanged(QAudio::State)), this, SLOT(onStateChanged(QAudio::State)), Qt::DirectConnection);
+    connect(&audioOutput, &QAudioOutput::notify, this, &SoundDevice::onNotify, Qt::DirectConnection);
+    connect(&audioOutput, &QAudioOutput::stateChanged, this, &SoundDevice::onStateChanged, Qt::DirectConnection);
 }
 
 void SoundDevice::Start(QIODevice * p_device, float duration, bool loop)
