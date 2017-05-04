@@ -39,7 +39,12 @@ int main(int argc, char *argv[])
     QCommandLineOption loopSoundOption("l", QCoreApplication::translate("main", "Loop the sound."));
     parser.addOption(loopSoundOption);
 
+    QCommandLineOption traceOption("t", QCoreApplication::translate("main", "Enable tracing."));
+    parser.addOption(traceOption);
+
     parser.process(app);
+
+    EnableTracing(parser.isSet(traceOption));
 
     if (parser.positionalArguments().length() == 1)
     {
@@ -132,6 +137,8 @@ int main(int argc, char *argv[])
         }
         else
         {
+            std::cout << "with audio decoder..." << std::endl;
+
             std::shared_ptr<QByteArray> pSoundBuffer = std::make_shared<QByteArray>();
 
             std::shared_ptr<SoundDecoder> pDecoder = std::make_shared<SoundDecoder>(sound_file_name, *(pSoundBuffer.get()));
@@ -145,13 +152,15 @@ int main(int argc, char *argv[])
 
             std::shared_ptr<QBuffer> in = std::make_shared<QBuffer>(pSoundBuffer.get());
 
-            std::function<void ()> next_func = [in, pSoundBuffer, pDevice]()
+            bool loop = parser.isSet(loopSoundOption);
+
+            std::function<void ()> next_func = [in, pSoundBuffer, pDevice, loop]()
             {
                 std::cout << "Sound buffer size = " << pSoundBuffer->length() << std::endl;
 
                 in->open(QIODevice::ReadOnly);
 
-                pDevice->Start(in.get(), 0, true);
+                pDevice->Start(in.get(), 0, loop);
             };
 
             QObject::connect(pDecoder.get(), &SoundDecoder::done, &app, next_func);

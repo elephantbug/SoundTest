@@ -6,6 +6,8 @@
 
 namespace SoundTest
 {
+    bool tracingEnabled = false;
+
     std::shared_ptr<Sound> CreateEncodedSound(const QString & file_name)
     {
         return std::make_shared<EncodedSound>(file_name);

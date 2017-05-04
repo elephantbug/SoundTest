@@ -61,5 +61,7 @@ namespace SoundTest
         bool loopWithNotify;
 
         bool loopWithStateChanged;
+
+        bool tracingEnabled = false;
     };
 }

@@ -31,4 +31,16 @@ namespace SoundTest
     std::shared_ptr<Sound> CreateEncodedSound(const QString & file_name);
 
     QAudioFormat GetWavFormat();
+
+    extern bool tracingEnabled;
+
+    inline bool IsTraceEnabled()
+    {
+        return tracingEnabled;
+    }
+
+    inline void EnableTracing(bool val)
+    {
+        tracingEnabled = val;
+    }
 }

@@ -37,7 +37,18 @@ using namespace SoundTest;
 
 SoundDecoder::SoundDecoder(const QString & file_name, QByteArray & output_array) : inputFile(file_name), outputArray(output_array), outputFile(&outputArray)
 {
+    if (IsTraceEnabled())
+    {
+        std::cout << "SoundDecoder: creating QAudioDecoder..." << std::endl;
+    }
+
     audioDecoder.reset(new QAudioDecoder(this));
+
+    if (IsTraceEnabled())
+    {
+        std::cout << "SoundDecoder: QAudioDecoder created." << std::endl;
+    }
+
     audioDecoder->setAudioFormat(GetWavFormat());
 
     connect(audioDecoder.get(), &QAudioDecoder::bufferReady, this, &SoundDecoder::bufferReady);
