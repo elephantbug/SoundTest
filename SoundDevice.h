@@ -19,15 +19,9 @@ namespace SoundTest
 
         void Stop();
 
-        qreal GetVolume() const
-        {
-            return audioOutput.volume();
-        }
+        qreal GetVolume() const;
 
-        void SetVolume(qreal val)
-        {
-            audioOutput.setVolume(val);
-        }
+        void SetVolume(qreal val);
 
     signals:
 
@@ -52,7 +46,7 @@ namespace SoundTest
 
         typedef std::lock_guard<std::recursive_mutex> Lock;
 
-        std::recursive_mutex playMutex;
+        mutable std::recursive_mutex playMutex;
 
         QIODevice * pDevice = nullptr;
 

@@ -71,6 +71,20 @@ void SoundDevice::Stop()
     }
 }
 
+qreal SoundDevice::GetVolume() const
+{
+    Lock lock(playMutex);
+
+    return audioOutput.volume();
+}
+
+void SoundDevice::SetVolume(qreal val)
+{
+    Lock lock(playMutex);
+
+    audioOutput.setVolume(val);
+}
+
 void SoundDevice::onStateChanged(QAudio::State state)
 {
     Lock lock(playMutex);
