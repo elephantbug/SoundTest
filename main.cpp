@@ -29,17 +29,7 @@ namespace SoundTest
 
     protected:
 
-        void run() override
-        {
-            for (int i = 0; i < iterCount; ++i)
-            {
-                //pDevice->Start(inputFile.get(), 0, false);
-
-                msleep(1000);
-
-                //pDevice->Stop();
-            }
-        }
+        void run() override;
 
     private:
 
@@ -47,6 +37,34 @@ namespace SoundTest
         std::shared_ptr<QFile> inputFile;
         int iterCount;
     };
+
+    void SoundTestThread::run()
+    {
+        QEventLoop loop;
+
+        std::cout << "Starting the sound." << std::endl;
+
+        auto pDevice = std::make_shared<SoundDevice>(44);
+
+        QObject::connect(pDevice.get(), &SoundDevice::done, &loop, [&loop]() {loop.quit();});
+
+        pDevice->Start(inputFile.get(), 0, false);
+
+//        for (int i = 0; i < iterCount; ++i)
+//        {
+//            std::cout << "Starting the sound.";
+
+//            pDevice->Start(inputFile.get(), 0, false);
+
+//            msleep(5000);
+
+//            pDevice->Stop();
+//        }
+
+        std::cout << "Starting the event loop." << std::endl;
+
+        loop.exec();
+    }
 }
 
 using namespace SoundTest;
@@ -150,28 +168,28 @@ int main(int argc, char *argv[])
         }
         else if (parser.isSet(rawOption))
         {
-            std::shared_ptr<QFile> inputFile = std::make_shared<QFile>(sound_file_name);
+            std::shared_ptr<SoundDevice> pDevice = std::make_shared<SoundDevice>(44);
 
-            if (inputFile->open(QIODevice::ReadOnly))
+            if (parser.isSet(multipleThreadsOption))
             {
-                std::shared_ptr<SoundDevice> pDevice = std::make_shared<SoundDevice>(44);
+                int iter_count = 1;//1000000;
 
-                if (parser.isSet(multipleThreadsOption))
+                if (parser.isSet(iterCountOption))
                 {
-                    int iter_count = 1;
+                    iter_count = parser.value(iterCountOption).toInt();
+                }
 
-                    if (parser.isSet(iterCountOption))
+                start_func = [&app, pDevice, sound_file_name, iter_count]()
+                {
+                    std::vector<SoundTestThread *> threads;
+
+                    constexpr size_t thread_count = 4;
+
+                    for (size_t i = 0; i < thread_count; ++i)
                     {
-                        iter_count = parser.value(iterCountOption).toInt();
-                    }
+                        std::shared_ptr<QFile> inputFile = std::make_shared<QFile>(sound_file_name);
 
-                    start_func = [&app, pDevice, inputFile, iter_count]()
-                    {
-                        std::vector<SoundTestThread *> threads;
-
-                        constexpr size_t thread_count = 4;
-
-                        for (size_t i = 0; i < thread_count; ++i)
+                        if (inputFile->open(QIODevice::ReadOnly))
                         {
                             auto thread = new SoundTestThread(pDevice, inputFile, iter_count);
 
@@ -179,18 +197,29 @@ int main(int argc, char *argv[])
 
                             threads.push_back(thread);
                         }
-
-                        for (auto * t : threads)
+                        else
                         {
-                            t->wait();
+                            std::cout << "Cannot open input file '" << sound_file_name.toStdString() << " for reading." << std::endl;
 
-                            delete t;
+                            app.quit();
                         }
+                    }
 
-                        app.quit();
-                    };
-                }
-                else
+                    for (auto * t : threads)
+                    {
+                        t->wait();
+
+                        delete t;
+                    }
+
+                    app.quit();
+                };
+            }
+            else
+            {
+                std::shared_ptr<QFile> inputFile = std::make_shared<QFile>(sound_file_name);
+
+                if (inputFile->open(QIODevice::ReadOnly))
                 {
                     QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
 
@@ -199,15 +228,15 @@ int main(int argc, char *argv[])
                         pDevice->Start(inputFile.get(), 0, false);
                     };
                 }
-            }
-            else
-            {
-                std::cout << "Cannot open input file '" << sound_file_name.toStdString() << " for reading." << std::endl;
-
-                start_func = [&app]()
+                else
                 {
-                    app.quit();
-                };
+                    std::cout << "Cannot open input file '" << sound_file_name.toStdString() << " for reading." << std::endl;
+
+                    start_func = [&app]()
+                    {
+                        app.quit();
+                    };
+                }
             }
         }
         else
