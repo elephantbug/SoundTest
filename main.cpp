@@ -44,22 +44,26 @@ namespace SoundTest
 
         std::cout << "Starting the sound." << std::endl;
 
+        //It I use this->pDevice the sound does not play at all, or at least I do not hear it.
         auto pDevice = std::make_shared<SoundDevice>(44);
 
         QObject::connect(pDevice.get(), &SoundDevice::done, &loop, [&loop]() {loop.quit();});
 
         pDevice->Start(inputFile.get(), 0, false);
 
-//        for (int i = 0; i < iterCount; ++i)
-//        {
-//            std::cout << "Starting the sound.";
+        //It does not make a sense to test the sound in loop if each thread has its own SoundDevice.
+        /*
+        for (int i = 0; i < iterCount; ++i)
+        {
+            std::cout << "Starting the sound.";
 
-//            pDevice->Start(inputFile.get(), 0, false);
+            pDevice->Start(inputFile.get(), 0, false);
 
-//            msleep(5000);
+            msleep(5000);
 
-//            pDevice->Stop();
-//        }
+            pDevice->Stop();
+        }
+        */
 
         std::cout << "Starting the event loop." << std::endl;
 
