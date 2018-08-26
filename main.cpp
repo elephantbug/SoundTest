@@ -5,6 +5,7 @@
 #include <QSoundEffect>
 #include <QByteArray>
 #include <QFile>
+#include <QThread>
 #include <iostream>
 #include <sstream>
 #include <assert.h>
@@ -14,6 +15,39 @@
 #include "EncodedSound.h"
 #include "SoundDevice.h"
 #include "SoundDecoder.h"
+
+namespace SoundTest
+{
+    class SoundTestThread : public QThread
+    {
+    public:
+
+        SoundTestThread(std::shared_ptr<SoundDevice> d, std::shared_ptr<QFile> f, int iter_count) :
+            pDevice(d), inputFile(f), iterCount(iter_count)
+        {
+        }
+
+    protected:
+
+        void run() override
+        {
+            for (int i = 0; i < iterCount; ++i)
+            {
+                //pDevice->Start(inputFile.get(), 0, false);
+
+                msleep(1000);
+
+                //pDevice->Stop();
+            }
+        }
+
+    private:
+
+        std::shared_ptr<SoundDevice> pDevice;
+        std::shared_ptr<QFile> inputFile;
+        int iterCount;
+    };
+}
 
 using namespace SoundTest;
 
@@ -41,6 +75,12 @@ int main(int argc, char *argv[])
 
     QCommandLineOption traceOption("t", QCoreApplication::translate("main", "Enable tracing."));
     parser.addOption(traceOption);
+
+    QCommandLineOption multipleThreadsOption("m", QCoreApplication::translate("main", "Multiple threads."));
+    parser.addOption(multipleThreadsOption);
+
+    QCommandLineOption iterCountOption("i", QCoreApplication::translate("main", "Iteration count."));
+    parser.addOption(iterCountOption);
 
     parser.process(app);
 
@@ -114,20 +154,55 @@ int main(int argc, char *argv[])
 
             if (inputFile->open(QIODevice::ReadOnly))
             {
-                inputFile->seek(44);
+                std::shared_ptr<SoundDevice> pDevice = std::make_shared<SoundDevice>(44);
 
-                std::shared_ptr<SoundDevice> pDevice = std::make_shared<SoundDevice>();
-
-                QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
-
-                start_func = [pDevice, inputFile]()
+                if (parser.isSet(multipleThreadsOption))
                 {
-                    pDevice->Start(inputFile.get(), 0, false);
-                };
+                    int iter_count = 1;
+
+                    if (parser.isSet(iterCountOption))
+                    {
+                        iter_count = parser.value(iterCountOption).toInt();
+                    }
+
+                    start_func = [&app, pDevice, inputFile, iter_count]()
+                    {
+                        std::vector<SoundTestThread *> threads;
+
+                        constexpr size_t thread_count = 4;
+
+                        for (size_t i = 0; i < thread_count; ++i)
+                        {
+                            auto thread = new SoundTestThread(pDevice, inputFile, iter_count);
+
+                            thread->start();
+
+                            threads.push_back(thread);
+                        }
+
+                        for (auto * t : threads)
+                        {
+                            t->wait();
+
+                            delete t;
+                        }
+
+                        app.quit();
+                    };
+                }
+                else
+                {
+                    QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
+
+                    start_func = [pDevice, inputFile]()
+                    {
+                        pDevice->Start(inputFile.get(), 0, false);
+                    };
+                }
             }
             else
             {
-                std::cout << "Cannot open input file '" << sound_file_name.toStdString() << "'." << std::endl;
+                std::cout << "Cannot open input file '" << sound_file_name.toStdString() << " for reading." << std::endl;
 
                 start_func = [&app]()
                 {
@@ -177,4 +252,6 @@ int main(int argc, char *argv[])
     {
         std::cout << "Usage: SoundTest <sound-file>" << std::endl;
     }
+
+    return 1;
 }

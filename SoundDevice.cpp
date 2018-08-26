@@ -4,7 +4,7 @@
 
 using namespace SoundTest;
 
-SoundDevice::SoundDevice() : audioOutput(GetWavFormat(), this)
+SoundDevice::SoundDevice(qint64 start_pos) : audioOutput(GetWavFormat(), this), startPos(start_pos)
 {
     ClearFlags();
 
@@ -23,7 +23,7 @@ void SoundDevice::Start(QIODevice * p_device, float duration, bool loop)
 
     pDevice = p_device;
 
-    //SeekToStart();
+    SeekToStart();
 
     ClearFlags();
 

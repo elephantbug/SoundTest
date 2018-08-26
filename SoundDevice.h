@@ -13,7 +13,7 @@ namespace SoundTest
 
     public:
 
-        SoundDevice();
+        SoundDevice(qint64 start_pos = 0);
 
         void Start(QIODevice * p_device, float duration, bool loop);
 
@@ -35,7 +35,7 @@ namespace SoundTest
 
         void SeekToStart()
         {
-            pDevice->seek(0); //no need to skip 44 bytes of wav header
+            pDevice->seek(startPos);
         }
 
         void ClearFlags()
@@ -57,5 +57,7 @@ namespace SoundTest
         bool loopWithStateChanged;
 
         bool tracingEnabled = false;
+
+        const qint64 startPos;
     };
 }
