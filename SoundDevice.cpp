@@ -10,7 +10,7 @@ SoundDevice::SoundDevice(qint64 start_pos) : audioOutput(GetWavFormat(), this), 
     ClearFlags();
 
     //connect(&audioOutput, &QAudioSink::notify, this, &SoundDevice::onNotify, Qt::DirectConnection);
-    connect(&audioOutput, &QAudioSink::stateChanged, this, &SoundDevice::onStateChanged, Qt::DirectConnection);
+    connect(&audioOutput, &QAudioSink::stateChanged, this, &SoundDevice::onStateChanged);
 }
 
 void SoundDevice::Start(QIODevice * p_device, float duration, bool loop)
