@@ -8,8 +8,8 @@ SoundDevice::SoundDevice(qint64 start_pos) : audioOutput(GetWavFormat(), this), 
 {
     ClearFlags();
 
-    connect(&audioOutput, &QAudioOutput::notify, this, &SoundDevice::onNotify, Qt::DirectConnection);
-    connect(&audioOutput, &QAudioOutput::stateChanged, this, &SoundDevice::onStateChanged, Qt::DirectConnection);
+    //connect(&audioOutput, &QAudioSink::notify, this, &SoundDevice::onNotify, Qt::DirectConnection);
+    connect(&audioOutput, &QAudioSink::stateChanged, this, &SoundDevice::onStateChanged, Qt::DirectConnection);
 }
 
 void SoundDevice::Start(QIODevice * p_device, float duration, bool loop)
@@ -28,31 +28,6 @@ void SoundDevice::Start(QIODevice * p_device, float duration, bool loop)
     ClearFlags();
 
     loopWithStateChanged = loop;
-
-    //looks like it does not work on Android
-    bool useOnNotify = false;
-
-    if (useOnNotify)
-    {
-        if (loop)
-        {
-            if (std::isnan(duration))
-            {
-                loopWithStateChanged = true;
-            }
-            else
-            {
-                loopWithNotify = true;
-
-                audioOutput.setNotifyInterval((int)(duration * 1000));
-            }
-        }
-
-        if (!loopWithNotify)
-        {
-            audioOutput.setNotifyInterval(100 * 1000);
-        }
-    }
 
     audioOutput.start(pDevice);
 }

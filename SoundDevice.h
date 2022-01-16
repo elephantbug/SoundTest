@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QAudioOutput>
+#include <QAudioSink>
 #include <QIODevice>
 
 #include <mutex>
@@ -50,7 +50,7 @@ namespace SoundTest
 
         QIODevice * pDevice = nullptr;
 
-        QAudioOutput audioOutput;
+        QAudioSink audioOutput;
 
         bool loopWithNotify;
 

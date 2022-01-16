@@ -12,9 +12,8 @@
 #include <memory>
 #include <functional>
 
-#include "EncodedSound.h"
 #include "SoundDevice.h"
-#include "SoundDecoder.h"
+#include "Sound.h"
 
 namespace SoundTest
 {
@@ -108,6 +107,8 @@ int main(int argc, char *argv[])
 
     EnableTracing(parser.isSet(traceOption));
 
+    const bool loop = parser.isSet(loopSoundOption);
+
     if (parser.positionalArguments().length() == 1)
     {
         QString sound_file_name = parser.positionalArguments().at(0);
@@ -126,9 +127,9 @@ int main(int argc, char *argv[])
 
             std::function<void ()> status_func;
 
-            if (parser.isSet(loopSoundOption))
+            if (loop)
             {
-                status_func = [&app, pSound]()
+                status_func = [pSound]()
                 {
                     std::cout << "Is playing = " << pSound->isPlaying() << std::endl;
 
@@ -158,7 +159,11 @@ int main(int argc, char *argv[])
         }
         else if (parser.isSet(useEncodedSoundClassOption))
         {
-            std::cout << "with QAudioOutput..." << std::endl;
+            std::cout << "with QAudioOutput... - not supported." << std::endl;
+
+            return 1;
+
+            /*
 
             SoundTest::EncodedSound::PrintCodecs();
 
@@ -169,6 +174,7 @@ int main(int argc, char *argv[])
             pSound->loop(parser.isSet(loopSoundOption));
 
             start_func = [pSound]() { pSound->Start(); };
+            */
         }
         else if (parser.isSet(rawOption))
         {
@@ -227,9 +233,9 @@ int main(int argc, char *argv[])
                 {
                     QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
 
-                    start_func = [pDevice, inputFile]()
+                    start_func = [pDevice, inputFile, loop]()
                     {
-                        pDevice->Start(inputFile.get(), 0, false);
+                        pDevice->Start(inputFile.get(), 0, loop);
                     };
                 }
                 else
@@ -245,7 +251,11 @@ int main(int argc, char *argv[])
         }
         else
         {
-            std::cout << "with audio decoder..." << std::endl;
+            std::cout << "with audio decoder... - not supported." << std::endl;
+
+            return 1;
+
+            /*
 
             std::shared_ptr<QByteArray> pSoundBuffer = std::make_shared<QByteArray>();
 
@@ -274,6 +284,7 @@ int main(int argc, char *argv[])
             QObject::connect(pDecoder.get(), &SoundDecoder::done, &app, next_func);
 
             QObject::connect(pDevice.get(), &SoundDevice::done, &app, [&app]() {app.quit();});
+            */
         }
 
         // This will run the task from the application event loop.
