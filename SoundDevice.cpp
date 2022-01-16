@@ -92,8 +92,9 @@ void SoundDevice::onStateChanged(QAudio::State state)
 
             SeekToStart();
 
-            QTimer::singleShot(0, this, [this](){ audioOutput.start(pDevice);});
-            //audioOutput.start(pDevice);
+            //timer does not help
+            //QTimer::singleShot(0, this, [this](){ audioOutput.start(pDevice);});
+            audioOutput.start(pDevice);
         }
         else
         {
