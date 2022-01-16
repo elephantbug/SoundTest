@@ -1,6 +1,7 @@
 #include "Sound.h"
 #include "SoundDevice.h"
 #include <iostream>
+#include <QTimer>
 
 using namespace SoundTest;
 
@@ -91,7 +92,8 @@ void SoundDevice::onStateChanged(QAudio::State state)
 
             SeekToStart();
 
-            audioOutput.start(pDevice);
+            QTimer::singleShot(0, this, [this](){ audioOutput.start(pDevice);});
+            //audioOutput.start(pDevice);
         }
         else
         {
