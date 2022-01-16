@@ -1,13 +1,9 @@
 QT += core multimedia
 QT -= gui
 
-CONFIG += c++14
+CONFIG += c++20 console
 
 TARGET = SoundTest
-CONFIG += console
-CONFIG -= app_bundle
-
-TEMPLATE = app
 
 SOURCES += main.cpp \
     Sound.cpp \
